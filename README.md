@@ -91,3 +91,14 @@ The dataset contains anonymized patient health parameters such as:
 ```bash
 git clone https://github.com/pashamrakshithreddy/Medibudgit](https://github.com/Pashamrakshithreddy/Medibuddy.git
 cd Medibuddy.py
+### 🔹Step 2: Install dependencies
+```bash
+pip install -r requirements.txt
+
+### 🔹 Step 3: Run the model or web app
+```bash
+# To run backend API
+python app.py
+
+# To run UI using Streamlit
+streamlit run app.py
