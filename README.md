@@ -86,17 +86,16 @@ The dataset contains anonymized patient health parameters such as:
 ---
 
 ## 🧩 Installation & Usage  
+### 
+🔹 Step 1: Clone the repository  
 
-### 🔹 Step 1: Clone the repository  
-```bash
 git clone https://github.com/pashamrakshithreddy/Medibudgit](https://github.com/Pashamrakshithreddy/Medibuddy.git
 cd Medibuddy.py
-### 🔹Step 2: Install dependencies
-```bash
+ 🔹Step 2: Install dependencies
+ 
 pip install -r requirements.txt
 
-### 🔹 Step 3: Run the model or web app
-```bash
+🔹 Step 3: Run the model or web app
 # To run backend API
 python app.py
 
