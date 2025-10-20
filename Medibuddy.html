@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKD Risk Predictor</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a professional/medical look */
+        :root {
+            --primary-color: #0d9488; /* Teal 700 */
+            --secondary-color: #0f766e; /* Teal 800 */
+            --background-color: #f0fdfa; /* Teal 50 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+        }
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+        .form-input {
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.4);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+<div id="app" class="app-container p-4">
+
+    <!-- Main Card Container -->
+    <div class="w-full max-w-lg bg-white shadow-2xl rounded-xl overflow-hidden md:p-8 p-6 transition-all duration-300">
+
+        <!-- Navigation/Header (Always Visible) -->
+        <header class="pb-6 border-b border-gray-100 mb-6">
+            <h1 class="text-3xl font-extrabold text-teal-700 tracking-tight flex items-center">
+                <svg class="w-8 h-8 mr-2 text-teal-500" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-14h4v12h-4zM9 12h6v2H9zM15 8h-6v2h6z"/></svg>
+                CKD Predictor
+            </h1>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <div id="content-area">
+            <!-- Content will be rendered here by JavaScript -->
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- Global State and Constants ---
+    const APP_ID = 'ckd-predictor'; // Identifier for potential future database integration
+    let currentPage = 'home';
+    let predictionResult = null;
+
+    // Target element to render content
+    const contentArea = document.getElementById('content-area');
+
+    // --- Utility Functions ---
+
+    /**
+     * Converts raw text content into a standard HTML element.
+     * Used for message boxes instead of window.alert.
+     * @param {string} message - The message to display.
+     */
+    function displayMessage(message) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full">
+                <h3 class="text-xl font-bold text-red-600 mb-4">Error</h3>
+                <p class="text-gray-700 mb-6">${message}</p>
+                <button onclick="this.parentNode.parentNode.remove()" class="w-full py-2 px-4 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition duration-150">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    /**
+     * --- Core Simulated ML Prediction Logic ---
+     * This function simulates a machine learning model's output
+     * by assigning weights to key health parameters to calculate a risk score.
+     *
+     * @param {object} data - Form data containing patient parameters.
+     * @returns {object} - The prediction result (risk level, score, and interpretation).
+     */
+    function simulateCKDPrediction(data) {
+        let riskScore = 0;
+        const scoreBreakdown = {};
+
+        // 1. Age (Risk increases significantly after 50)
+        const age = parseFloat(data.age);
+        if (age >= 70) { riskScore += 30; scoreBreakdown.age = 30; }
+        else if (age >= 60) { riskScore += 20; scoreBreakdown.age = 20; }
+        else if (age >= 50) { riskScore += 10; scoreBreakdown.age = 10; }
+        else { scoreBreakdown.age = 0; }
+
+        // 2. Diabetes Mellitus (DM) - Major risk factor
+        if (data.dm === 'yes') {
+            riskScore += 40;
+            scoreBreakdown.dm = 40;
+        } else { scoreBreakdown.dm = 0; }
+
+        // 3. Hypertension (HTN) - Major risk factor
+        if (data.htn === 'yes') {
+            riskScore += 35;
+            scoreBreakdown.htn = 35;
+        } else { scoreBreakdown.htn = 0; }
+
+        // 4. Serum Creatinine (sCr) - Key indicator of kidney function (> 1.2 is high)
+        const scr = parseFloat(data.sc);
+        if (scr >= 1.4) { riskScore += 45; scoreBreakdown.scr = 45; }
+        else if (scr >= 1.2) { riskScore += 25; scoreBreakdown.scr = 25; }
+        else { scoreBreakdown.scr = 0; }
+
+        // 5. Hemoglobin (Hemo) - Anemia is a common complication of CKD (< 13.5 male / < 12 female)
+        const hemo = parseFloat(data.hemo);
+        const gender = data.gender;
+        if (gender === 'male' && hemo < 13.5) {
+            riskScore += 15;
+            scoreBreakdown.hemo = 15;
+        } else if (gender === 'female' && hemo < 12.0) {
+            riskScore += 15;
+            scoreBreakdown.hemo = 15;
+        } else { scoreBreakdown.hemo = 0; }
+
+
+        // 6. Blood Pressure (Systolic BP) - Higher BP adds risk (> 140 mmHg)
+        const bp = parseFloat(data.bp);
+        if (bp >= 160) { riskScore += 20; scoreBreakdown.bp = 20; }
+        else if (bp >= 140) { riskScore += 10; scoreBreakdown.bp = 10; }
+        else { scoreBreakdown.bp = 0; }
+
+        // --- Risk Classification ---
+        let riskLevel = 'Low Risk';
+        let interpretation = 'Your provided parameters suggest a low probability of Chronic Kidney Disease (CKD). Maintain a healthy lifestyle and continue regular check-ups.';
+        let color = 'text-green-600 bg-green-100';
+
+        if (riskScore >= 75) {
+            riskLevel = 'High Risk';
+            interpretation = 'The model indicates a significantly high risk of CKD. We strongly recommend consulting a physician or nephrologist for comprehensive diagnostic tests (e.g., eGFR, urine albumin-creatinine ratio).';
+            color = 'text-red-600 bg-red-100';
+        } else if (riskScore >= 45) {
+            riskLevel = 'Moderate Risk';
+            interpretation = 'The model suggests a moderate risk for CKD, likely due to one or more concerning factors. Follow up with a healthcare provider and monitor key indicators closely.';
+            color = 'text-yellow-600 bg-yellow-100';
+        }
+
+        return {
+            score: riskScore,
+            level: riskLevel,
+            interpretation: interpretation,
+            colorClass: color,
+            breakdown: scoreBreakdown,
+            inputData: data
+        };
+    }
+
+    // --- View Rendering Functions ---
+
+    function renderHome() {
+        contentArea.innerHTML = `
+            <div class="text-center p-4">
+                <h2 class="text-2xl font-bold mb-4 text-teal-600">Welcome to the CKD Risk Assessment Tool</h2>
+                <p class="text-gray-600 mb-8 leading-relaxed">
+                    This predictive analytics tool uses a simulated machine learning model based on key clinical and demographic data to assess the probability of Chronic Kidney Disease (CKD) risk. Early diagnosis is crucial for effective management.
+                </p>
+
+                <div class="space-y-4 mb-8">
+                    <div class="p-4 bg-teal-50 rounded-lg shadow-inner text-left">
+                        <h3 class="font-semibold text-teal-700">How it works:</h3>
+                        <ul class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
+                            <li>Input standard health parameters (Age, BP, Creatinine, etc.).</li>
+                            <li>The model processes these features based on their statistical weight.</li>
+                            <li>A risk score is generated to classify the patient as Low, Moderate, or High risk.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button onclick="navigateTo('form')" class="w-full py-3 bg-teal-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-teal-700 transition duration-200 transform hover:scale-105">
+                    Start Prediction
+                </button>
+            </div>
+        `;
+    }
+
+    function renderForm() {
+        contentArea.innerHTML = `
+            <div class="p-1">
+                <h2 class="text-2xl font-bold mb-6 text-teal-600">Patient Data Input</h2>
+                <form id="${APP_ID}-form" class="space-y-4">
+
+                    <!-- DEMOGRAPHICS -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-lg mb-3 text-gray-700 border-b pb-2">Demographics & History</h3>
+
+                        <!-- Age -->
+                        <div>
+                            <label for="age" class="block text-sm font-medium text-gray-700">Age (Years)</label>
+                            <input type="number" id="age" name="age" min="18" max="100" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                        </div>
+
+                        <!-- Gender -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                            <select id="gender" name="gender" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+
+                        <!-- Diabetes -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Known Diabetes Mellitus (DM)</label>
+                            <div class="flex space-x-4 mt-1">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="dm" value="yes" required class="form-radio text-teal-600 h-4 w-4">
+                                    <span class="ml-2 text-gray-600">Yes</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="dm" value="no" class="form-radio text-teal-600 h-4 w-4">
+                                    <span class="ml-2 text-gray-600">No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Hypertension -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Known Hypertension (HTN)</label>
+                            <div class="flex space-x-4 mt-1">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="htn" value="yes" required class="form-radio text-teal-600 h-4 w-4">
+                                    <span class="ml-2 text-gray-600">Yes</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="htn" value="no" class="form-radio text-teal-600 h-4 w-4">
+                                    <span class="ml-2 text-gray-600">No</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CLINICAL DATA -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-lg mb-3 text-gray-700 border-b pb-2">Clinical Parameters</h3>
+
+                        <!-- Blood Pressure (BP) -->
+                        <div>
+                            <label for="bp" class="block text-sm font-medium text-gray-700">Systolic Blood Pressure (mmHg)</label>
+                            <input type="number" id="bp" name="bp" min="50" max="250" step="1" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                        </div>
+
+                        <!-- Serum Creatinine (SC) -->
+                        <div>
+                            <label for="sc" class="block text-sm font-medium text-gray-700">Serum Creatinine (mg/dL)</label>
+                            <input type="number" id="sc" name="sc" min="0.1" max="10.0" step="0.1" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" placeholder="e.g., 1.0">
+                        </div>
+
+                        <!-- Hemoglobin (Hemo) -->
+                        <div>
+                            <label for="hemo" class="block text-sm font-medium text-gray-700">Hemoglobin (g/dL)</label>
+                            <input type="number" id="hemo" name="hemo" min="5.0" max="20.0" step="0.1" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" placeholder="e.g., 14.5">
+                        </div>
+                    </div>
+
+
+                    <div class="flex justify-between pt-4">
+                        <button type="button" onclick="navigateTo('home')" class="py-2 px-4 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition duration-150">
+                            Back
+                        </button>
+                        <button type="submit" class="py-2 px-4 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition duration-150">
+                            Predict Risk
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        // Attach submit listener after rendering
+        document.getElementById(`${APP_ID}-form`).addEventListener('submit', handleFormSubmit);
+    }
+
+    function renderResults() {
+        if (!predictionResult) {
+            // Should not happen if navigation is controlled, but as a safeguard
+            displayMessage("No prediction data found. Please run the prediction first.");
+            navigateTo('form');
+            return;
+        }
+
+        const { score, level, interpretation, colorClass, breakdown, inputData } = predictionResult;
+
+        contentArea.innerHTML = `
+            <div class="p-1 text-center">
+                <h2 class="text-2xl font-bold mb-2 text-teal-600">Prediction Summary</h2>
+                <p class="text-gray-500 mb-6">Based on the provided data and simulated ML model.</p>
+
+                <!-- Risk Level Card -->
+                <div class="p-6 rounded-xl shadow-lg mb-6 border-4 ${colorClass.replace('text', 'border')} ${colorClass}">
+                    <h3 class="text-lg font-semibold">CKD Risk Level</h3>
+                    <p class="text-5xl font-extrabold my-2 ${colorClass.split(' ')[0]}">${level}</p>
+                    <p class="text-sm font-medium ${colorClass.split(' ')[0]}">Total Risk Score: ${score.toFixed(0)}</p>
+                </div>
+
+                <!-- Interpretation -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-inner mb-6 text-left">
+                    <h4 class="font-bold text-gray-700 mb-2">Model Interpretation:</h4>
+                    <p class="text-gray-600 text-sm">${interpretation}</p>
+                </div>
+
+                <!-- Risk Factor Breakdown -->
+                <div class="text-left bg-white p-4 rounded-lg shadow-md mb-6">
+                    <h4 class="font-bold text-lg text-teal-700 mb-3">Feature Contribution</h4>
+                    <ul class="text-sm space-y-2">
+                        <li class="flex justify-between items-center border-b pb-1">
+                            <span class="text-gray-600 font-medium">Age (${inputData.age} yrs)</span>
+                            <span class="font-bold text-teal-600">${breakdown.age} pts</span>
+                        </li>
+                        <li class="flex justify-between items-center border-b pb-1">
+                            <span class="text-gray-600 font-medium">Diabetes (${inputData.dm === 'yes' ? 'Positive' : 'Negative'})</span>
+                            <span class="font-bold text-teal-600">${breakdown.dm} pts</span>
+                        </li>
+                        <li class="flex justify-between items-center border-b pb-1">
+                            <span class="text-gray-600 font-medium">Hypertension (${inputData.htn === 'yes' ? 'Positive' : 'Negative'})</span>
+                            <span class="font-bold text-teal-600">${breakdown.htn} pts</span>
+                        </li>
+                        <li class="flex justify-between items-center border-b pb-1">
+                            <span class="text-gray-600 font-medium">S. Creatinine (${inputData.sc} mg/dL)</span>
+                            <span class="font-bold text-teal-600">${breakdown.scr} pts</span>
+                        </li>
+                        <li class="flex justify-between items-center border-b pb-1">
+                            <span class="text-gray-600 font-medium">Hemoglobin (${inputData.hemo} g/dL)</span>
+                            <span class="font-bold text-teal-600">${breakdown.hemo} pts</span>
+                        </li>
+                         <li class="flex justify-between items-center">
+                            <span class="text-gray-600 font-medium">Systolic BP (${inputData.bp} mmHg)</span>
+                            <span class="font-bold text-teal-600">${breakdown.bp} pts</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex justify-center pt-4 space-x-4">
+                    <button onclick="navigateTo('form')" class="py-2 px-4 border border-teal-600 text-teal-600 font-semibold rounded-lg hover:bg-teal-50 transition duration-150">
+                        Run New Prediction
+                    </button>
+                    <button onclick="navigateTo('home')" class="py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition duration-150">
+                        Go Home
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- Controller Functions ---
+
+    /**
+     * Handles navigation between different views.
+     * @param {string} page - The page name ('home', 'form', 'results').
+     */
+    function navigateTo(page) {
+        currentPage = page;
+        window.scrollTo(0, 0); // Scroll to top on navigation
+
+        switch (page) {
+            case 'home':
+                renderHome();
+                break;
+            case 'form':
+                renderForm();
+                break;
+            case 'results':
+                renderResults();
+                break;
+            default:
+                renderHome();
+        }
+    }
+
+    /**
+     * Handles the form submission event, validates data, runs the simulation, and navigates to results.
+     * @param {Event} event - The form submission event.
+     */
+    function handleFormSubmit(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = {};
+
+        // Convert FormData to a regular object
+        for (const [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+
+        // Basic validation check for missing values (since 'required' is used in HTML)
+        if (Object.values(data).some(v => v === null || v === undefined || v === '')) {
+            displayMessage("Please ensure all fields are filled out before running the prediction.");
+            return;
+        }
+
+        // Run the simulated prediction
+        predictionResult = simulateCKDPrediction(data);
+
+        // Navigate to the results page
+        navigateTo('results');
+    }
+
+    // Initialize the application on load
+    document.addEventListener('DOMContentLoaded', () => {
+        navigateTo('home');
+    });
+
+</script>
+
+</body>
+</html>
